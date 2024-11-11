@@ -1,0 +1,26 @@
+# OBSERVATION
+# Accuracy:
+  The model achieved an accuracy of 54% on the validation dataset. This indicates that, on average, the model correctly predicted the severity of customer support tickets slightly more than half of the time.
+
+# Precision:
+
+Precision for each severity level (Low, Medium, High, Critical) ranges between 0.40 and 0.56, suggesting the model is more likely to predict Medium severity tickets with higher precision, but there is a noticeable decrease in precision for the Low severity category.
+This variation in precision could be due to an imbalance in the dataset, where some severity levels are more prevalent than others, leading to more accurate predictions for those classes.
+# Recall:
+
+Recall values for each category also hover around 0.46 - 0.54, with the Low and Critical categories performing relatively lower in recall. This indicates that the model struggles to identify these classes accurately, missing some tickets of those categories.
+Recall improvement can be made by focusing on techniques like class imbalance handling (e.g., oversampling underrepresented classes or adjusting class weights).
+# F1-Score:
+
+The F1-scores for each severity level show a moderate balance between precision and recall, with Medium and Critical severity levels performing slightly better in F1-score compared to Low and High. The overall F1 score reflects this moderate balance across categories.
+The model seems to perform reasonably well in distinguishing between Medium and Critical severity levels but still needs improvement in handling the Low severity class.
+# Macro Average:
+
+The macro average precision, recall, and F1-score are all around 0.49 - 0.50, which indicates a modest average performance across all categories. The model’s performance is balanced but still lacks fine-tuning to optimize for class-specific prediction.
+# Weighted Average:
+
+The weighted average shows a stronger performance in predicting higher-severity tickets (Medium, High, Critical) with a weighted average F1-score of 0.51, suggesting that the model's performance is more affected by these categories.
+# Model's Challenges:
+
+The relatively low performance in predicting the Low severity tickets suggests that this class may be underrepresented or not well-represented in the feature set.
+Further tuning, like hyperparameter optimization, feature engineering, or using a more sophisticated model (e.g., ensemble methods or transformer-based models), could help improve overall accuracy and F1-scores.
