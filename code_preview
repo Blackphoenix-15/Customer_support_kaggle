@@ -1,0 +1,114 @@
+import kagglehub
+
+# Download latest version
+path = kagglehub.dataset_download("suraj520/customer-support-ticket-dataset")
+
+print("Path to dataset files:", path)
+import os
+
+# Check if the directory exists
+dataset_dir = "/root/.cache/kagglehub/datasets/suraj520/customer-support-ticket-dataset/versions/1"
+if os.path.exists(dataset_dir):
+    print("Directory found. Files in the directory:")
+    print(os.listdir(dataset_dir))
+else:
+    print("Directory not found. Check the path.")
+
+import pandas as pd
+
+# Correct file path
+dataset_path = "/root/.cache/kagglehub/datasets/suraj520/customer-support-ticket-dataset/versions/1/customer_support_tickets.csv"
+
+# Load the CSV file into a DataFrame
+df = pd.read_csv(dataset_path)
+
+# Display the first few rows
+print(df.head())
+
+# Check the dataset structure
+print(df.info())
+
+df = df.drop(['Customer Name', 'Customer Email', 'First Response Time', 
+              'Time to Resolution', 'Resolution'], axis=1)
+df = df.dropna(subset=['Ticket Description', 'Ticket Priority'])
+priority_mapping = {'Low': 0, 'Medium': 1, 'High': 2, 'Critical': 3}
+df['severity_label'] = df['Ticket Priority'].map(priority_mapping)
+
+import re
+
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r'\{.*?\}', '', text)  
+    text = re.sub(r'[^\w\s]', '', text)  
+    return text
+
+df['cleaned_description'] = df['Ticket Description'].apply(clean_text)
+from sklearn.model_selection import train_test_split
+
+X = df['cleaned_description']
+y = df['severity_label']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+from transformers import AutoTokenizer
+
+tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+
+# Tokenize data
+train_encodings = tokenizer(list(X_train), truncation=True, padding=True, max_length=128, return_tensors="pt")
+test_encodings = tokenizer(list(X_test), truncation=True, padding=True, max_length=128, return_tensors="pt")
+import torch
+
+class TicketDataset(torch.utils.data.Dataset):
+    def __init__(self, encodings, labels):
+        self.encodings = encodings
+        self.labels = labels
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        item = {key: val[idx] for key, val in self.encodings.items()}
+        item['labels'] = torch.tensor(self.labels[idx])
+        return item
+
+train_dataset = TicketDataset(train_encodings, y_train.tolist())
+test_dataset = TicketDataset(test_encodings, y_test.tolist())
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
+
+tfidf = TfidfVectorizer(max_features=5000)
+X = tfidf.fit_transform(df['cleaned_description']).toarray()
+y = df['severity_label']
+
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+clf = LogisticRegression(max_iter=200)
+clf.fit(X_train, y_train)
+
+# Evaluate model
+y_pred = clf.predict(X_test)
+print(classification_report(y_test, y_pred))
+from sentence_transformers import SentenceTransformer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report
+
+# Load Sentence-BERT for embedding
+model = SentenceTransformer('all-MiniLM-L6-v2')  # Much faster than full transformers
+
+# Generate embeddings
+X_embeddings = model.encode(df['cleaned_description'].tolist(), batch_size=32, show_progress_bar=True)
+y = df['severity_label']
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X_embeddings, y, test_size=0.2, random_state=42)
+
+# Train a Random Forest
+clf = RandomForestClassifier()
+clf.fit(X_train, y_train)
+
+# Evaluate model
+y_pred = clf.predict(X_test)
+print(classification_report(y_test, y_pred))
